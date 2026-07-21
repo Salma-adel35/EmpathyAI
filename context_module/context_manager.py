@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Any
 
 from .memory import get_conversation_context
 from .rag import retrieve_relevant_context
@@ -6,11 +6,18 @@ from .rag import retrieve_relevant_context
 
 def get_context(
     user_id: str,
-    query: str
-) -> Dict:
+    query: str,
+    top_k: int = 3
+) -> Dict[str, Any]:
     """
-    Retrieve both conversation memory
-    and relevant knowledge.
+    Retrieve conversation memory and relevant knowledge.
+
+    This module is responsible only for:
+    - Conversation memory
+    - RAG retrieval
+
+    Emotion, intent, and screening analysis are handled
+    by other modules.
     """
 
     conversation_memory = get_conversation_context(
@@ -19,7 +26,7 @@ def get_context(
 
     retrieved_knowledge = retrieve_relevant_context(
         query=query,
-        top_k=3
+        top_k=top_k
     )
 
     return {

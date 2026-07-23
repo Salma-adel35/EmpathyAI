@@ -1,555 +1,246 @@
 import streamlit as st
 
+
+from config import USER_ID
+
+
 from api_client import send_message
 
 
-# ============================================================
+from utils.session import (
+    init_session,
+    get_current_chat,
+    add_message
+)
+
+
+from components.sidebar import (
+    render_sidebar
+)
+
+
+from components.chat import (
+    render_chat,
+    stream_text
+)
+
+
+from components.welcome import (
+    render_welcome
+)
+
+
+
+
+# =========================
 # PAGE CONFIGURATION
-# ============================================================
+# =========================
 
 st.set_page_config(
+
     page_title="EmpathyAI",
+
     page_icon="💙",
+
     layout="wide",
+
     initial_sidebar_state="expanded"
+
 )
 
 
-# ============================================================
-# CUSTOM CSS
-# ============================================================
+# =========================
+# LOAD CSS
+# =========================
 
-st.markdown(
-    """
-    <style>
+with open(
 
-    /* Main page */
+    "assets/style.css",
 
-    .stApp {
-        background-color: #0f1117;
-    }
+    encoding="utf-8"
 
+) as file:
 
-    /* Sidebar */
+    st.markdown(
 
-    section[data-testid="stSidebar"] {
-        background-color: #151820;
-        border-right: 1px solid #282c36;
-    }
+        f"<style>{file.read()}</style>",
+
+        unsafe_allow_html=True
+
+    )
 
 
-    /* Header */
+# =========================
+# INITIALIZE SESSION
+# =========================
 
-    .app-header {
-        padding: 18px 0 10px 0;
-        border-bottom: 1px solid #282c36;
-        margin-bottom: 25px;
-    }
-
-    .app-title {
-        font-size: 28px;
-        font-weight: 700;
-        color: #f5f7fa;
-        margin-bottom: 2px;
-    }
-
-    .app-subtitle {
-        font-size: 14px;
-        color: #9ca3af;
-    }
+init_session()
 
 
-    /* Welcome section */
-
-    .welcome-container {
-        text-align: center;
-        padding: 70px 20px 30px 20px;
-    }
-
-    .welcome-icon {
-        font-size: 52px;
-        margin-bottom: 15px;
-    }
-
-    .welcome-title {
-        font-size: 32px;
-        font-weight: 700;
-        color: #f5f7fa;
-    }
-
-    .welcome-text {
-        color: #9ca3af;
-        font-size: 16px;
-        max-width: 650px;
-        margin: auto;
-        line-height: 1.6;
-    }
-
-
-    /* Emotion card */
-
-    .emotion-card {
-        background-color: #1a1e27;
-        border: 1px solid #2c3240;
-        border-radius: 12px;
-        padding: 14px 16px;
-        margin: 12px 0;
-    }
-
-    .emotion-title {
-        font-size: 12px;
-        color: #9ca3af;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .emotion-value {
-        font-size: 18px;
-        color: #f5f7fa;
-        font-weight: 600;
-        margin-top: 4px;
-    }
-
-
-    /* Context status */
-
-    .context-status {
-        background-color: #171b23;
-        border: 1px solid #292e39;
-        border-radius: 10px;
-        padding: 12px;
-        margin-top: 15px;
-        font-size: 13px;
-        color: #b8bec9;
-    }
-
-
-    /* Suggestion buttons */
-
-    div.stButton > button {
-        border-radius: 10px;
-        border: 1px solid #303643;
-        background-color: #191d26;
-        color: #d9dde5;
-        min-height: 45px;
-        transition: 0.2s;
-    }
-
-    div.stButton > button:hover {
-        border-color: #6b7280;
-        background-color: #222733;
-    }
-
-
-    /* Chat messages */
-
-    [data-testid="stChatMessage"] {
-        border-radius: 14px;
-        padding: 10px;
-    }
-
-
-    /* Input */
-
-    [data-testid="stChatInput"] {
-        border-radius: 14px;
-    }
-
-
-    /* Hide Streamlit branding */
-
-    #MainMenu {
-        visibility: hidden;
-    }
-
-    footer {
-        visibility: hidden;
-    }
-
-    header {
-        visibility: hidden;
-    }
-
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# ============================================================
-# SESSION STATE
-# ============================================================
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-
-if "emotion_history" not in st.session_state:
-    st.session_state.emotion_history = []
-
-
-if "last_analysis" not in st.session_state:
-    st.session_state.last_analysis = None
-
-
-# ============================================================
+# =========================
 # SIDEBAR
-# ============================================================
+# =========================
 
-with st.sidebar:
+render_sidebar()
 
-    st.markdown(
-        """
-        <div style="padding: 10px 0 25px 0;">
-            <div style="
-                font-size: 24px;
-                font-weight: 700;
-                color: #f5f7fa;
-            ">
-                💙 EmpathyAI
-            </div>
 
-            <div style="
-                font-size: 13px;
-                color: #9ca3af;
-                margin-top: 5px;
-            ">
-                Emotionally-aware AI support
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
+# =========================
+# HEADER
+# =========================
+
+
+
+
+# =========================
+# CURRENT CHAT
+# =========================
+
+chat = get_current_chat()
+
+
+# =========================
+# DISPLAY CHAT OR WELCOME
+# =========================
+
+if not chat["messages"]:
+
+    render_welcome()
+
+else:
+
+    render_chat(
+
+        chat["messages"]
+
     )
 
 
-    if st.button(
-        "＋ New Conversation",
-        use_container_width=True
-    ):
-
-        st.session_state.messages = []
-
-        st.session_state.emotion_history = []
-
-        st.session_state.last_analysis = None
-
-        st.rerun()
-
-
-    st.divider()
-
-
-    st.markdown(
-        "### 🧠 Emotional Journey"
-    )
-
-
-    if st.session_state.emotion_history:
-
-        for emotion in reversed(
-            st.session_state.emotion_history[-5:]
-        ):
-
-            st.markdown(
-                f"""
-                <div class="emotion-card">
-                    <div class="emotion-title">
-                        Detected emotion
-                    </div>
-
-                    <div class="emotion-value">
-                        {emotion}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-    else:
-
-        st.caption(
-            "Your detected emotions will appear here during the conversation."
-        )
-
-
-    st.divider()
-
-
-    st.markdown(
-        "### 🔗 Context Used"
-    )
-
-
-    if st.session_state.last_analysis:
-
-        analysis = st.session_state.last_analysis
-
-        memory_status = (
-            "Used"
-            if analysis.get("memory_used")
-            else "Not used"
-        )
-
-        rag_status = (
-            "Used"
-            if analysis.get("rag_used")
-            else "Not used"
-        )
-
-        st.markdown(
-            f"""
-            <div class="context-status">
-                🧠 Conversation Memory: {memory_status}<br><br>
-                📚 Relevant Knowledge: {rag_status}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    else:
-
-        st.caption(
-            "Context information will appear after your first message."
-        )
-
-
-    st.divider()
-
-
-    st.caption(
-        "EmpathyAI is an AI support assistant and does not replace professional help."
-    )
-
-
-# ============================================================
-# MAIN HEADER
-# ============================================================
-
-st.markdown(
-    """
-    <div class="app-header">
-
-        <div class="app-title">
-            EmpathyAI
-        </div>
-
-        <div class="app-subtitle">
-            A context-aware AI assistant that understands emotions,
-            intent, and conversation history.
-        </div>
-
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# ============================================================
-# WELCOME SCREEN
-# ============================================================
-
-if not st.session_state.messages:
-
-    st.markdown(
-        """
-        <div class="welcome-container">
-
-            <div class="welcome-icon">
-                💙
-            </div>
-
-            <div class="welcome-title">
-                Welcome to EmpathyAI
-            </div>
-
-            <div class="welcome-text">
-                A safe space to express yourself.
-                EmpathyAI understands the emotional context
-                behind your messages and responds with
-                personalized, supportive conversations.
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-    st.markdown(
-        "### 💭 You can start with..."
-    )
-
-
-    col1, col2 = st.columns(2)
-
-
-    with col1:
-
-        if st.button(
-            "😣 I'm feeling overwhelmed",
-            use_container_width=True
-        ):
-
-            st.session_state.pending_message = (
-                "I am feeling overwhelmed."
-            )
-
-            st.rerun()
-
-
-        if st.button(
-            "💬 I just want to talk",
-            use_container_width=True
-        ):
-
-            st.session_state.pending_message = (
-                "I just want someone to listen."
-            )
-
-            st.rerun()
-
-
-    with col2:
-
-        if st.button(
-            "🎯 I need some advice",
-            use_container_width=True
-        ):
-
-            st.session_state.pending_message = (
-                "I need some advice about something I am going through."
-            )
-
-            st.rerun()
-
-
-        if st.button(
-            "🌱 I need motivation",
-            use_container_width=True
-        ):
-
-            st.session_state.pending_message = (
-                "I need some motivation right now."
-            )
-
-            st.rerun()
-
-
-# ============================================================
-# DISPLAY CHAT HISTORY
-# ============================================================
-
-for message in st.session_state.messages:
-
-    with st.chat_message(
-        message["role"]
-    ):
-
-        st.markdown(
-            message["content"]
-        )
-
-
-# ============================================================
-# CHAT INPUT
-# ============================================================
+# =========================
+# GET USER MESSAGE
+# =========================
 
 pending_message = st.session_state.pop(
+
     "pending_message",
+
     None
+
 )
 
 
-user_input = st.chat_input(
-    "Share what's on your mind..."
+prompt = st.chat_input(
+
+    "Message EmpathyAI..."
+
 )
 
 
-message_to_send = (
-    user_input
-    if user_input
+message = (
+
+    prompt
+
+    if prompt
+
     else pending_message
+
 )
 
 
-if message_to_send:
+# =========================
+# PROCESS MESSAGE
+# =========================
+
+if message:
 
     # Add user message
 
-    st.session_state.messages.append(
-        {
-            "role": "user",
-            "content": message_to_send
-        }
+    add_message(
+
+        "user",
+
+        message
+
     )
 
 
+    # Get current chat
+
+    chat = get_current_chat()
+
+
+    # Create chat title
+
+    if len(chat["messages"]) == 1:
+
+        chat["title"] = message[:30]
+
+
+    # Display user message
+
     with st.chat_message(
-        "user"
+
+        "user",
+
+        avatar="🧑"
+
     ):
 
         st.markdown(
-            message_to_send
+
+            message
+
         )
 
 
-    # Generate response
+    # Generate assistant response
 
     with st.chat_message(
-        "assistant"
+
+        "assistant",
+
+        avatar="💙"
+
     ):
 
         with st.spinner(
-            "EmpathyAI is thinking..."
+
+            "Thinking..."
+
         ):
 
             result = send_message(
-                message_to_send
+
+                message,
+
+                USER_ID
+
             )
 
 
         response = result.get(
+
             "response",
-            "I am here to listen."
+
+            "Something went wrong."
+
         )
 
 
-        st.markdown(
+        # Typing animation
+
+        stream_text(
+
             response
+
         )
 
 
-    # Save assistant message
+    # Save assistant response
 
-    st.session_state.messages.append(
-        {
-            "role": "assistant",
-            "content": response
-        }
+    add_message(
+
+        "assistant",
+
+        response
+
     )
-
-
-    # Save emotion
-
-    emotion = result.get(
-        "emotion",
-        "Unknown"
-    )
-
-    emotion_emoji = result.get(
-        "emotion_emoji",
-        "💭"
-    )
-
-
-    st.session_state.emotion_history.append(
-        f"{emotion_emoji} {emotion}"
-    )
-
-
-    # Save analysis
-
-    st.session_state.last_analysis = result
-
-
-    st.rerun()

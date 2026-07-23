@@ -1,47 +1,97 @@
-from typing import Dict, List
+import sqlite3
+from pathlib import Path
+
+DB_PATH = Path(__file__).parent / "memory.db"
 
 
-# Stores conversation messages for each user
-conversation_store: Dict[str, List[dict]] = {}
+def _get_connection():
+    return sqlite3.connect(DB_PATH)
 
 
-def add_message(user_id: str, role: str, content: str) -> None:
-    """
-    Add a message to a user's conversation history.
+def init_memory():
+    conn = _get_connection()
+    cursor = conn.cursor()
 
-    Parameters:
-        user_id (str): Unique identifier for the user.
-        role (str): Either "user" or "assistant".
-        content (str): The message content.
-    """
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS conversation (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
-    if user_id not in conversation_store:
-        conversation_store[user_id] = []
+    conn.commit()
+    conn.close()
 
-    conversation_store[user_id].append({
-        "role": role,
-        "content": content
-    })
+
+def add_message(user_id: str, role: str, content: str):
+
+    conn = _get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO conversation(user_id, role, content)
+        VALUES (?, ?, ?)
+        """,
+        (user_id, role, content)
+    )
+
+    conn.commit()
+    conn.close()
 
 
 def get_conversation_context(
     user_id: str,
     max_messages: int = 6
-) -> List[dict]:
-    """
-    Retrieve the most recent messages for a user.
-    """
+):
 
-    if user_id not in conversation_store:
-        return []
+    conn = _get_connection()
+    cursor = conn.cursor()
 
-    return conversation_store[user_id][-max_messages:]
+    cursor.execute(
+        """
+        SELECT role, content
+        FROM conversation
+        WHERE user_id=?
+        ORDER BY id DESC
+        LIMIT ?
+        """,
+        (user_id, max_messages)
+    )
+
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    rows.reverse()
+
+    return [
+        {
+            "role": role,
+            "content": content
+        }
+        for role, content in rows
+    ]
 
 
-def clear_memory(user_id: str) -> None:
-    """
-    Clear all conversation history for a user.
-    """
+def clear_memory(user_id: str):
 
-    if user_id in conversation_store:
-        del conversation_store[user_id]
+    conn = _get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        DELETE FROM conversation
+        WHERE user_id=?
+        """,
+        (user_id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+
+init_memory()

@@ -1,0 +1,180 @@
+/* =========================
+   GLOBAL
+========================= */
+
+.stApp {
+
+    background-color: #202123;
+
+}
+
+
+section[data-testid="stSidebar"] {
+
+    background-color: #171717;
+
+    border-right: 1px solid #303030;
+
+}
+
+
+/* =========================
+   TEXT
+========================= */
+
+h1,
+h2,
+h3,
+p,
+span,
+label {
+
+    color: white;
+
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.app-header {
+
+    padding: 20px 0 20px 0;
+
+}
+
+
+.app-header h1 {
+
+    margin: 0;
+
+    font-size: 30px;
+
+}
+
+
+.app-header p {
+
+    margin-top: 5px;
+
+    color: #9ca3af;
+
+}
+
+
+/* =========================
+   WELCOME
+========================= */
+
+.welcome-container {
+
+    text-align: center;
+
+    margin-top: 18vh;
+
+    margin-bottom: 40px;
+
+}
+
+
+.welcome-container h1 {
+
+    font-size: 36px;
+
+}
+
+
+.welcome-container p {
+
+    color: #9ca3af;
+
+    font-size: 17px;
+
+}
+
+
+/* =========================
+   CHAT
+========================= */
+
+[data-testid="stChatMessage"] {
+
+    padding: 10px 0;
+
+}
+
+
+[data-testid="stChatMessageContent"] {
+
+    max-width: 100%;
+
+}
+
+
+/* =========================
+   SIDEBAR
+========================= */
+
+.sidebar-subtitle {
+
+    color: #9ca3af;
+
+    margin-top: -10px;
+
+}
+
+
+section[data-testid="stSidebar"] button {
+
+    border-radius: 8px !important;
+
+    border: none !important;
+
+}
+
+
+section[data-testid="stSidebar"] button:hover {
+
+    background-color: #2a2a2a;
+
+}
+
+
+/* =========================
+   INPUT
+========================= */
+
+[data-testid="stChatInput"] {
+
+    border-radius: 14px;
+
+}
+
+
+textarea {
+
+    border-radius: 14px !important;
+
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 768px) {
+
+    .welcome-container {
+
+        margin-top: 10vh;
+
+    }
+
+    .welcome-container h1 {
+
+        font-size: 28px;
+
+    }
+
+}

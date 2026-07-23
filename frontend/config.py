@@ -5,10 +5,10 @@ load_dotenv()
 
 BACKEND_URL = os.getenv(
     "BACKEND_URL",
-    "http://localhost:5000"
+    "http://127.0.0.1:5000"
 )
 
-USE_MOCK_API = os.getenv(
-    "USE_MOCK_API",
-    "true"
-).lower() == "true"
+USER_ID = os.getenv(
+    "USER_ID",
+    "demo_user"
+)

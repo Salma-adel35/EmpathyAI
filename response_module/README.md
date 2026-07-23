@@ -1,25 +1,106 @@
-# EmpathyAI — Response Generation & Safety Module
+# EmpathyAI — Response Module 
 
-This module handles prompt engineering, response generation using LLMs (or safe contextual fallbacks), and automated safety guardrails for the **EmpathyAI** pipeline.
+Handles **response generation** and **safety checking** for the EmpathyAI pipeline.
 
-## 🚀 Quick Start
+## Directory Structure
 
-Import `process_response` directly in the main backend pipeline:
+```
+response_module/
+├── __init__.py           # Package init — exposes generate_response()
+├── llm_client.py         # OpenAI API wrapper (key loaded from .env)
+├── prompt_builder.py     # Builds system + user prompts from all upstream inputs
+├── safety_checker.py     # Rule-based safety filter (regex + keyword patterns)
+├── response_generator.py # Main pipeline entry point with fallback logic
+└── requirements.txt      # Python dependencies
+tests/
+└── test_response.py      # Full pytest test suite (37 tests)
+```
+
+## Setup
+
+```bash
+# 1. Install dependencies
+pip install -r response_module/requirements.txt
+
+# 2. Create .env in the project root (NEVER commit this file)
+echo "OPENAI_API_KEY=sk-your-key-here" > .env
+
+# Optional model overrides
+echo "EMPATHY_MODEL=gpt-4o"       >> .env
+echo "EMPATHY_MAX_TOKENS=256"     >> .env
+echo "EMPATHY_TEMPERATURE=0.7"    >> .env
+echo "EMPATHY_TIMEOUT=15"         >> .env
+```
+
+## Usage
 
 ```python
-from response_module.response_pipeline import process_response
+from response_module.response_generator import generate_response
 
-result = process_response(
-    message="I studied all day but I still feel like I am going to fail.",
-    emotion={"label": "anxiety", "confidence": 0.91},
-    intent={"label": "seeking_support", "confidence": 0.94},
-    conversation_memory=[],
-    retrieved_knowledge=[]
+result = generate_response(
+    message   = "I am feeling overwhelmed by my exam tomorrow.",
+    emotion   = {"label": "stress", "confidence": 0.91},
+    intent    = {"intent": "seeking_support", "confidence": 0.89},
+    screening = {"indicator": "anxiety_related", "confidence": 0.78, "risk_level": "low"},
+    context   = {
+        "conversation_memory": [
+            {"role": "user", "content": "I have been studying for hours."}
+        ],
+        "retrieved_knowledge": [
+            {"text": "Deep breathing reduces study stress.", "score": 0.85}
+        ]
+    }
 )
 
 print(result)
-# Output:
-# {
-#     "response": "It sounds like you have been working really hard, and it is understandable to feel anxious about the result.",
-#     "safety_status": "safe"
-# }
+# {"response": "...", "safety_status": "safe"}
+```
+
+## Pipeline Overview
+
+```
+generate_response()
+       │
+       ▼
+build_messages()          ← prompt_builder.py
+       │                    (weaves emotion + intent + screening + context)
+       ▼
+call_llm()                ← llm_client.py
+       │
+       ├── None returned? → _get_fallback()   [zero-downtime guarantee]
+       │
+       ▼
+check_safety()            ← safety_checker.py
+       │
+       ├── Flagged?       → _get_fallback()   [safety guarantee]
+       │
+       ▼
+{"response": ..., "safety_status": "safe" | "flagged"}
+```
+
+## Fallback Guarantee
+
+If `OPENAI_API_KEY` is missing **or** the LLM call fails for **any** reason,
+`generate_response()` returns a pre-written, emotion- and risk-aware fallback
+response with `safety_status: "safe"` — guaranteeing **zero downtime** for the
+backend regardless of external API availability.
+
+## Safety Checker
+
+Three violation categories are checked via regex before any response reaches
+the user:
+
+| Category | Examples caught |
+|----------|----------------|
+| **Diagnostic** | "you have depression", "sounds like OCD" |
+| **Prescription** | "take sertraline", "try Xanax" |
+| **Harmful** | "get over it", "man up", "you're weak" |
+
+## Running Tests
+
+```bash
+pytest tests/test_response.py -v
+```
+
+Expected output: **37 tests passing**, no API key required (all LLM calls
+are mocked).

@@ -1,37 +1,94 @@
-"""
-Handles LLM API communication with automatic fallback capability.
-"""
-
 import os
+
 from dotenv import load_dotenv
+from google import genai
+
 
 load_dotenv()
 
-def call_llm(system_prompt: str, user_prompt: str) -> str:
-    """
-    Calls the OpenAI API if an API key is available.
-    Returns None if API key is unconfigured or call fails, triggering fallback mode.
-    """
-    api_key = os.getenv("OPENAI_API_KEY")
-    model_name = os.getenv("LLM_MODEL", "gpt-4o-mini")
 
-    if not api_key or api_key.strip() == "" or api_key == "your_openai_api_key_here":
+GEMINI_API_KEY = os.getenv(
+    "GEMINI_API_KEY"
+)
+
+
+client = None
+
+if GEMINI_API_KEY:
+
+    client = genai.Client(
+        api_key=GEMINI_API_KEY
+    )
+
+
+def call_llm(
+    system_prompt: str,
+    user_prompt: str
+) -> str | None:
+
+    """
+    Generate a complete response using Google Gemini.
+    """
+
+    if not GEMINI_API_KEY:
+
+        print(
+            "GEMINI_API_KEY is not set."
+        )
+
         return None
 
+
     try:
-        from openai import OpenAI
-        client = OpenAI(api_key=api_key)
-        
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            temperature=0.7,
-            max_tokens=200
+
+        response = client.models.generate_content(
+
+            model="gemini-3.5-flash",
+
+            contents=user_prompt,
+
+            config={
+
+                "system_instruction": system_prompt,
+
+                "max_output_tokens": 512,
+
+                "thinking_config": {
+
+                    "thinking_budget": 0
+
+                }
+
+            }
+
         )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"[LLM Client Warning] API call failed ({e}). Falling back to safe response engine.")
+
+
+        if not response:
+
+            print(
+                "Gemini returned no response."
+            )
+
+            return None
+
+
+        if response.text:
+
+            return response.text.strip()
+
+
+        print(
+            "Gemini returned an empty response."
+        )
+
+        return None
+
+
+    except Exception as error:
+
+        print(
+            f"LLM call failed: {error}"
+        )
+
         return None

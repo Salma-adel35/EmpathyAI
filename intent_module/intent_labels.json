@@ -1,0 +1,23 @@
+{
+  "labels": [
+    "venting",
+    "seeking_support",
+    "seeking_advice",
+    "seeking_motivation",
+    "casual_conversation"
+  ],
+  "label2id": {
+    "venting": 0,
+    "seeking_support": 1,
+    "seeking_advice": 2,
+    "seeking_motivation": 3,
+    "casual_conversation": 4
+  },
+  "id2label": {
+    "0": "venting",
+    "1": "seeking_support",
+    "2": "seeking_advice",
+    "3": "seeking_motivation",
+    "4": "casual_conversation"
+  }
+}

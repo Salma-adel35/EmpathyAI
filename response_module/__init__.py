@@ -1,14 +1,16 @@
 """
-EmpathyAI — Response Generation & Safety Module
+response_module
+===============
+EmpathyAI — Response Generation & Safety Module 
+
+Public API
+----------
+>>> from response_module.response_generator import generate_response
+>>> result = generate_response(message, emotion, intent, screening, context)
+>>> # result → {"response": str, "safety_status": "safe" | "flagged"}
 """
 
-from response_module.response_pipeline import process_response, generate_response
-from response_module.safety import check_response_safety
-from response_module.fallbacks import generate_safe_fallback
+from .response_generator import generate_response  # noqa: F401
 
-__all__ = [
-    "process_response",
-    "generate_response",
-    "check_response_safety",
-    "generate_safe_fallback"
-]
+__all__ = ["generate_response"]
+__version__ = "1.0.0"
